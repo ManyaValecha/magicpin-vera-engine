@@ -3,70 +3,91 @@ import json
 
 BASE_URL = "http://localhost:8080/v1"
 
-def print_res(res):
-    print(f"Status: {res.status_code}")
-    print(json.dumps(res.json(), indent=2))
-    print("-" * 40)
+def print_res(label, res):
+    print(f"\n{'='*50}")
+    print(f"  {label}")
+    print(f"  Status: {res.status_code}")
+    try:
+        print(json.dumps(res.json(), indent=2, ensure_ascii=False))
+    except:
+        print(res.text)
+    print(f"{'='*50}")
 
-print("GET /metadata")
-print_res(requests.get(f"{BASE_URL}/metadata"))
+# ---- CORE ENDPOINTS ----
+print_res("GET /healthz", requests.get(f"{BASE_URL}/healthz"))
+print_res("GET /metadata", requests.get(f"{BASE_URL}/metadata"))
 
-print("GET /healthz")
-print_res(requests.get(f"{BASE_URL}/healthz"))
+# ---- POST /context (various scopes) ----
+def add_merchant(mid, category_slug, name, locality):
+    return requests.post(f"{BASE_URL}/context", json={
+        "scope": "merchant",
+        "context_id": mid,
+        "version": 1,
+        "payload": {
+            "category_slug": category_slug,
+            "identity": {"name": name, "locality": locality},
+            "offers": [{"title": f"{name} Special"}]
+        },
+        "delivered_at": "2026-05-01T10:00:00Z"
+    })
 
-print("POST /context (new)")
-ctx_req = {
-  "scope": "merchant",
-  "context_id": "m_001_drmeera",
-  "version": 1,
-  "payload": {
-    "category_slug": "dentists",
-    "identity": {"name": "Dr. Meera's Clinic", "locality": "Lajpat Nagar"}
-  },
-  "delivered_at": "2026-04-26T10:00:00Z"
-}
-print_res(requests.post(f"{BASE_URL}/context", json=ctx_req))
+def add_trigger(tid, merchant_id, kind="generic"):
+    return requests.post(f"{BASE_URL}/context", json={
+        "scope": "trigger",
+        "context_id": tid,
+        "version": 1,
+        "payload": {"kind": kind, "merchant_id": merchant_id},
+        "delivered_at": "2026-05-01T10:05:00Z"
+    })
 
-print("POST /context (same ver)")
-print_res(requests.post(f"{BASE_URL}/context", json=ctx_req))
+# Seed all 5 categories
+categories = [
+    ("m_dentist",    "dentists",     "Dr. Priya Sharma",  "Lajpat Nagar"),
+    ("m_salon",      "salons",       "GlamourCuts",       "Saket"),
+    ("m_restaurant", "restaurants",  "Pizza Hub",         "Connaught Place"),
+    ("m_gym",        "gyms",         "FitZone",           "Vasant Kunj"),
+    ("m_pharmacy",   "pharmacies",   "MedPlus",           "Hauz Khas"),
+]
 
-print("POST /context (older ver -> 409)")
-ctx_req["version"] = 0
-print_res(requests.post(f"{BASE_URL}/context", json=ctx_req))
+for mid, slug, name, loc in categories:
+    res = add_merchant(mid, slug, name, loc)
+    print_res(f"POST /context → merchant [{slug}]", res)
 
-print("POST /context (trigger)")
-trg_req = {
-  "scope": "trigger",
-  "context_id": "t_001",
-  "version": 1,
-  "payload": {
-    "kind": "recall_due",
-    "merchant_id": "m_001_drmeera"
-  },
-  "delivered_at": "2026-04-26T10:05:00Z"
-}
-print_res(requests.post(f"{BASE_URL}/context", json=trg_req))
+for i, (mid, slug, name, loc) in enumerate(categories):
+    res = add_trigger(f"t_{i+1}", mid)
+    print_res(f"POST /context → trigger for [{slug}]", res)
 
-print("GET /healthz (after counts)")
-print_res(requests.get(f"{BASE_URL}/healthz"))
+# ---- POST /tick: all 5 triggers ----
+tick_res = requests.post(f"{BASE_URL}/tick", json={
+    "now": "2026-05-01T18:00:00Z",
+    "available_triggers": ["t_1", "t_2", "t_3", "t_4", "t_5"]
+})
+print_res("POST /tick — All 5 verticals", tick_res)
 
-print("POST /tick")
-tick_req = {
-  "now": "2026-04-26T10:30:00Z",
-  "available_triggers": ["t_001"]
-}
-print_res(requests.post(f"{BASE_URL}/tick", json=tick_req))
+# ---- POST /reply ----
+print_res("POST /reply — Generic reply", requests.post(f"{BASE_URL}/reply", json={
+    "conversation_id": "conv_m_restaurant_t_3",
+    "merchant_id": "m_restaurant",
+    "from_role": "merchant",
+    "message": "Sounds good, how do I start?",
+    "received_at": "2026-05-01T18:05:00Z",
+    "turn_number": 1
+}))
 
-print("POST /reply")
-reply_req = {
-  "conversation_id": "conv_m_001_drmeera_t_001",
-  "from_role": "merchant",
-  "message": "Yes, send me the abstract",
-  "received_at": "2026-04-26T10:45:00Z",
-  "turn_number": 2
-}
-print_res(requests.post(f"{BASE_URL}/reply", json=reply_req))
+print_res("POST /reply — Price objection", requests.post(f"{BASE_URL}/reply", json={
+    "conversation_id": "conv_m_salon_t_2",
+    "merchant_id": "m_salon",
+    "from_role": "merchant",
+    "message": "too expensive for me",
+    "received_at": "2026-05-01T18:06:00Z",
+    "turn_number": 2
+}))
 
-print("POST /reply (stop)")
-reply_req["message"] = "please stop"
-print_res(requests.post(f"{BASE_URL}/reply", json=reply_req))
+print_res("POST /reply — Stop", requests.post(f"{BASE_URL}/reply", json={
+    "conversation_id": "conv_m_gym_t_4",
+    "merchant_id": "m_gym",
+    "from_role": "merchant",
+    "message": "please stop",
+    "received_at": "2026-05-01T18:07:00Z",
+    "turn_number": 3
+}))
