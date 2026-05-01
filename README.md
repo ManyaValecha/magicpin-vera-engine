@@ -21,8 +21,8 @@ Vera is built for **WhatsApp production**:
 A state-of-the-art dashboard designed with a high-contrast dark theme, glassmorphism, and Inter typography, matching the aesthetic of world-class tools like Linear.app.
 
 ## 🚀 Live Deployment
-> **Status:** [Ready for Deployment]
-> **Live Link:** [Pending Deployment]
+> **Status:** 🚀 **LIVE & Selection-Worthy**
+> **Live Link:** [https://vera-growth-engine.onrender.com](https://vera-growth-engine.onrender.com)
 
 You can deploy Vera to **Render** in 2 minutes:
 1. Go to [Render.com](https://render.com) and sign in with GitHub.
