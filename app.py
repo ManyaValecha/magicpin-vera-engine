@@ -474,16 +474,22 @@ if os.path.exists("frontend/dist"):
     app.mount("/assets", StaticFiles(directory="frontend/dist/assets"), name="assets")
 
 @app.get("/")
+async def serve_root():
+    index_path = "frontend/dist/index.html"
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+    return JSONResponse(status_code=404, content={"detail": "Frontend build not found."})
+
 @app.get("/{full_path:path}")
-async def serve_frontend(full_path: str = None):
+async def serve_frontend(full_path: str):
     # If the path starts with v1, let the API handlers take it
-    if full_path and full_path.startswith("v1"):
+    if full_path.startswith("v1"):
         return JSONResponse(status_code=404, content={"detail": "Not Found"})
     
     index_path = "frontend/dist/index.html"
     if os.path.exists(index_path):
         return FileResponse(index_path)
-    return JSONResponse(status_code=404, content={"detail": "Frontend build not found. Run 'npm run build' in frontend directory."})
+    return JSONResponse(status_code=404, content={"detail": "Not Found"})
 
 if __name__ == "__main__":
     import uvicorn
