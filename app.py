@@ -12,8 +12,9 @@ except ImportError:
     has_openai = False
 
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 # ---------------------------------------------------------
@@ -464,6 +465,25 @@ def receive_reply(req: ReplyRequest):
     })
     
     return handle_reply_intent(text=req.message, conversation_id=req.conversation_id, merchant_id=req.merchant_id)
+
+# ---------------------------------------------------------
+# Static File Serving (Production)
+# ---------------------------------------------------------
+# Mount the dist folder for assets
+if os.path.exists("frontend/dist"):
+    app.mount("/assets", StaticFiles(directory="frontend/dist/assets"), name="assets")
+
+@app.get("/")
+@app.get("/{full_path:path}")
+async def serve_frontend(full_path: str = None):
+    # If the path starts with v1, let the API handlers take it
+    if full_path and full_path.startswith("v1"):
+        return JSONResponse(status_code=404, content={"detail": "Not Found"})
+    
+    index_path = "frontend/dist/index.html"
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+    return JSONResponse(status_code=404, content={"detail": "Frontend build not found. Run 'npm run build' in frontend directory."})
 
 if __name__ == "__main__":
     import uvicorn
