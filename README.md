@@ -20,6 +20,16 @@ Vera is built for **WhatsApp production**:
 ### 🎨 Premium Linear-style UI
 A state-of-the-art dashboard designed with a high-contrast dark theme, glassmorphism, and Inter typography, matching the aesthetic of world-class tools like Linear.app.
 
+## 🚀 Live Deployment
+> **Status:** [Ready for Deployment]
+> **Live Link:** [Pending Deployment]
+
+You can deploy Vera to **Render** in 2 minutes:
+1. Go to [Render.com](https://render.com) and sign in with GitHub.
+2. Click **New +** > **Blueprint**.
+3. Select your `magicpin-vera-engine` repository.
+4. Render will automatically detect the `render.yaml` and launch both the FastAPI backend and the React frontend.
+
 ## 🛠️ Setup Instructions
 
 ### 1. Backend Launch
