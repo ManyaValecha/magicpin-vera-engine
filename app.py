@@ -344,59 +344,87 @@ def _deterministic_growth_action(trigger_id: str, trigger_payload: Dict[str, Any
 
 def _deterministic_reply_intent(text: str, conversation_id: str) -> ReplyResponse:
     text_clean = text.lower().strip()
+    words = text_clean.split()
     
-    # Identify context from conversation_id pattern
+    # Identify context
     merchant_id = conversation_id.replace("conv_", "")
     m_ctx = storage.get(("merchant", merchant_id), {}).get("payload", {})
     name = m_ctx.get("identity", {}).get("name", "merchant")
     locality = m_ctx.get("identity", {}).get("locality", "Lajpat Nagar")
     category = str(m_ctx.get("category_slug", "business")).lower()
     
-    # Robust name cleaning to avoid "Dr. Dr."
+    # Category Normalization
+    cat_kind = "generic"
+    if any(k in category for k in ["dentist", "dental"]): cat_kind = "dentist"
+    elif any(k in category for k in ["gym", "fitness", "yoga"]): cat_kind = "gym"
+    elif any(k in category for k in ["salon", "beaut", "spa"]): cat_kind = "salon"
+    elif any(k in category for k in ["restaur", "food", "cafe", "bakery", "dining"]): cat_kind = "food"
+    elif any(k in category for k in ["pharmac", "medic", "chemist"]): cat_kind = "pharmacy"
+
+    # Name Handling
     name_clean = name.strip()
-    is_dentist = any(k in category for k in ["dentist", "dental"])
-    if is_dentist and not name_clean.lower().startswith("dr"):
+    if cat_kind == "dentist" and not name_clean.lower().startswith("dr"):
         display_name = f"Dr. {name_clean}"
     else:
         display_name = name_clean
 
-    # 1. Handle "hi / hello"
-    words = text_clean.split()
-    if any(h in words for h in ["hi", "hello", "hey"]):
-        reply = f"Hi {display_name}. Health searches are active in {locality} today. Want to run ₹299 checkup promo now?"
-        if not is_dentist: # Adapt if not a dentist
-            reply = f"Hi {display_name}. Activity in {locality} is picking up. Ready to run a new promo today?"
-        return ReplyResponse(reply=reply, action="send", cta="Launch Promo", rationale="Smart greeting with local context.")
+    # Intent Templates Matrix
+    templates = {
+        "hi": {
+            "dentist": f"Hi {display_name}. Health searches are active in {locality} today. Want to run ₹299 checkup promo now?",
+            "gym": f"Hi {display_name}. Fitness searches are peaking in {locality}! Ready to launch a 7-day trial offer?",
+            "salon": f"Hi {display_name}. Self-care interest is high in {locality} today. Should we push a 'New Look' makeover deal?",
+            "food": f"Hi {display_name}. Dining demand near {locality} is rising. Ready to boost your 'Quick Lunch' combo?",
+            "pharmacy": f"Hi {display_name}. Health utility searches are active in {locality}. Want to run a delivery-first promo?",
+            "generic": f"Hi {display_name}. Nearby demand in {locality} is active today. Want to launch a high-conversion offer now?"
+        },
+        "sales": {
+            "dentist": f"Views are strong but conversions can improve. Launch ₹299 checkup offer today to capture nearby {locality} demand. Activate?",
+            "gym": f"Traffic is active but sign-ups are soft. A ₹499 membership trial could boost {locality} conversions. Launch?",
+            "salon": f"Views are high! A 'Bridal Preview' or 'Glow Deal' would convert this {locality} traffic into bookings. Activate?",
+            "food": f"Footfall is strong but orders are soft. A 'Flash Combo' for the next 2 hours can capture {locality} demand. Start?",
+            "pharmacy": f"Search volume is good. Let's push an 'Essentials Bundle' to boost your {locality} sales today. Activate?",
+            "generic": f"Views are strong but conversions can improve. I recommend a localized flash offer for {locality} users. Launch?"
+        },
+        "calls": {
+            "dentist": f"Calls are soft this week. Add a call-first CTA with ₹299 dental checkup to increase bookings in {locality}. Should I start it?",
+            "gym": f"Call volume is low. Let's add a 'Book a Free Trial' CTA to your {locality} ads to drive appointments. Start?",
+            "salon": f"Inquiries are light. A call-based 'Style Consultation' offer can fill your slots in {locality}. Initiate?",
+            "food": f"Booking calls are soft. Let's add a 'Call for Table Reservation' CTA to capture more {locality} diners. Go?",
+            "pharmacy": f"Prescription inquiries are down. A direct call-for-delivery CTA could increase your {locality} orders. Start?",
+            "generic": f"Call volume is lower this week. Let's add a direct-call CTA to your {locality} campaign for better reach. Go?"
+        },
+        "recommend": {
+            "dentist": f"Best option today: ₹299 Dental Checkup campaign targeting nearby {locality} search traffic. Launch now?",
+            "gym": f"Top recommendation: '7-Day Summer Restart' membership drive for {locality} fitness seekers. Launch?",
+            "salon": f"Best for you today: 'Weekend Glow' bridal/makeup special. Captures current {locality} booking spikes. Run?",
+            "food": f"Recommended play: 'Evening Family Combo' targeting {locality} dinner traffic. Launch and capture orders?",
+            "pharmacy": f"Strategic choice: 'Health Essentials Refill' push for your top 50 {locality} customers. Send now?",
+            "generic": f"Best option today: A targeted 'Trending Offer' for {locality} search traffic. Launch now?"
+        },
+        "ipl": {
+            "food": f"Hi {display_name}, IPL match tonight brings heavy footfall! A 'Match Day Combo' will drive massive orders. Ready?",
+            "dentist": f"Hi {display_name}, IPL excitement is high in {locality}! A 'Match Day Shine' special checkup till 9 PM could capture footfall. Ready?",
+            "salon": f"Hi {display_name}, IPL traffic is heavy tonight. A 'Quick Match-Day Grooming' special can attract walk-ins. Ready?",
+            "gym": f"Hi {display_name}, IPL buzz is peak! A 'Match Day Fitness Trial' could drive high footfall tonight. Activate?",
+            "pharmacy": f"Hi {display_name}, IPL traffic is rising. Boost your 'Match-Day Essentials' visibility to capture demand. Go?",
+            "generic": f"IPL excitement is peak in {locality}! A 'Match Day Special' can drive heavy footfall tonight. Activate?"
+        }
+    }
 
-    # 2. Handle "sales are low"
-    elif "sales" in text_clean:
-        reply = f"Views are strong but conversions can improve. Launch ₹299 checkup offer today to capture nearby {locality} demand. Activate now?"
-        if not is_dentist:
-            reply = f"Traffic is steady but sales are soft. I recommend a flash offer to boost {locality} conversions. Want to launch?"
-        return ReplyResponse(reply=reply, action="send", cta="Activate now?", rationale="Sales recovery strategy.")
+    # Intent selection
+    intent = None
+    if any(h in words for h in ["hi", "hello", "hey"]): intent = "hi"
+    elif "sales" in text_clean: intent = "sales"
+    elif "calls" in text_clean: intent = "calls"
+    elif any(k in text_clean for k in ["what should i run", "offer", "recommend", "how to"]): intent = "recommend"
+    elif "boost" in text_clean and intent is None: intent = "recommend"
+    elif "ipl" in text_clean: intent = "ipl"
 
-    # 3. Handle "calls are low"
-    elif "calls" in text_clean:
-        reply = f"Calls are soft this week. Add a call-first CTA with ₹299 dental checkup to increase bookings in {locality}. Should I start it?"
-        if not is_dentist:
-            reply = f"Call volume is lower this week. Let's add a direct-call CTA to your {locality} campaign. Initiate?"
-        return ReplyResponse(reply=reply, action="send", cta="Start it?", rationale="Call-volume optimization.")
-
-    # 4. Handle "what should i run" / "how to boost"
-    elif any(k in text_clean for k in ["what should i run", "offer", "boost", "how to"]):
-        reply = f"Best option today: ₹299 Dental Checkup campaign targeting nearby {locality} search traffic. Launch now?"
-        if "boost" in text_clean and is_dentist:
-            reply = f"Health searches are peaking in {locality} today. Promote your ₹299 dental cleaning offer now to capture demand. Activate?"
-        elif not is_dentist:
-            reply = f"I recommend a localized 'Trending Deal' for {locality} users. It has the highest conversion potential today. Launch?"
-        return ReplyResponse(reply=reply, action="send", cta="Launch now?", rationale="Intent-based strategic recommendation.")
-
-    # 5. Handle "IPL"
-    elif "ipl" in text_clean:
-        reply = f"Hi {display_name}, IPL match tonight brings heavy footfall to {locality}! We should run a 'Match Day' special checkup till 9 PM. Ready to boost?"
-        if not is_dentist:
-            reply = f"IPL excitement is high in {locality}! A 'Match Day Combo' could drive heavy footfall tonight. Activate?"
-        return ReplyResponse(reply=reply, action="send", cta="Ready to boost?", rationale="Real-time event capture.")
+    if intent:
+        reply = templates[intent].get(cat_kind, templates[intent]["generic"])
+        ctas = {"hi": "Launch Promo", "sales": "Activate Now", "calls": "Start Ads", "recommend": "Launch Campaign", "ipl": "Activate"}
+        return ReplyResponse(reply=reply, action="send", cta=ctas.get(intent, "Get Started"), rationale=f"Intent: {intent}, Category: {cat_kind}")
 
     # Standard fallbacks
     if any(i in text_clean for i in ["stop", "no", "not interested", "automated assistant"]):
@@ -411,11 +439,12 @@ def _deterministic_reply_intent(text: str, conversation_id: str) -> ReplyRespons
         )
 
     return ReplyResponse(
-        reply="Nearby demand looks active today. Want me to recommend the best campaign for your clinic now?",
+        reply="Nearby demand looks active today. Want me to recommend the best campaign for your business now?",
         action="send",
         cta="Recommend",
         rationale="Strong default fallback with proactive CTA."
     )
+
 
 
 def generate_growth_action(trigger_id: str, trigger_payload: Dict[str, Any]) -> Optional[ActionObject]:
