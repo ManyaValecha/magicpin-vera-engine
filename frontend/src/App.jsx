@@ -124,7 +124,7 @@ const App = () => {
             setStats(prev => ({
                 ...prev,
                 status: data.status === 'ok' ? 'Online' : 'Warning',
-                contexts: data.contexts_loaded
+                contexts: prev.contexts // healthz no longer returns contexts_loaded
             }));
         } catch (e) {
             setStats(prev => ({ ...prev, status: 'Offline' }));
@@ -224,7 +224,7 @@ const App = () => {
                 })
             });
             const data = await res.json();
-            setChat(prev => [...prev, { role: 'vera', text: data.body || `[Action: ${data.action}]` }]);
+            setChat(prev => [...prev, { role: 'vera', text: data.reply || `[Action: ${data.action}]` }]);
             addLog(`Reply processed: ${data.action}`, 'info');
         } catch (e) {
             addLog(`Reply failed`, 'error');
@@ -374,7 +374,7 @@ const App = () => {
                                                 <span className="text-[#5147e7] uppercase tracking-widest">{action.template_name || 'STRATEGY'}</span>
                                                 <span className="text-[#4a4b50] uppercase tracking-widest">ACTNOW</span>
                                             </div>
-                                            <p className="text-sm font-medium text-white leading-relaxed mb-4">{action.body}</p>
+                                            <p className="text-sm font-medium text-white leading-relaxed mb-4">{action.message || action.body}</p>
                                             <div className="flex items-center justify-between">
                                                 <button className="text-[11px] font-bold bg-white text-black px-4 py-1.5 rounded hover:bg-[#d1d1d1] transition-colors">{action.cta}</button>
                                                 {action.rationale && (

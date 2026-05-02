@@ -144,181 +144,185 @@ def _deterministic_growth_action(trigger_id: str, trigger_payload: Dict[str, Any
 
     def _resolve(kind: str, slug: str) -> tuple[str, str, str]:
         """Returns (message, cta, rationale)"""
+        
+        # Robust name cleaning to avoid "Dr. Dr."
+        name_clean = name.strip()
+        is_dentist = any(k in slug for k in ["dentist", "dental"])
+        if is_dentist and not name_clean.lower().startswith("dr"):
+            display_name = f"Dr. {name_clean}"
+        else:
+            display_name = name_clean
 
         # ---- curious_ask_due: Low-friction curiosity opener ----
         if "curious_ask" in kind:
-            if any(k in slug for k in ["dentist", "dental"]):
-                name_c = name if name.lower().startswith("dr") else f"Dr. {name}"
+            if is_dentist:
                 return (
-                    f"Quick question — many {locality} users delay their yearly checkup. Want me to promote a ₹299 dental screening to re-engage them?",
+                    f"Quick question {display_name} — many {locality} users delay their yearly checkup. Want me to promote a ₹299 dental screening to re-engage them?",
                     "Promote ₹299 Screening",
                     "Curiosity trigger + dentist category + low-friction entry-price CTA."
                 )
             elif any(k in slug for k in ["salon", "beauty", "spa"]):
                 return (
-                    f"Quick question — weekend self-care searches in {locality} are rising. Want me to boost a 'Hair Spa' offer to fill your slots?",
+                    f"Quick question {display_name} — weekend self-care searches in {locality} are rising. Want me to boost a 'Hair Spa' offer to fill your slots?",
                     "Boost Hair Spa",
                     "Curiosity trigger + salon category + weekend yield optimization."
                 )
             elif any(k in slug for k in ["restaurant", "food", "cafe"]):
                 return (
-                    f"Quick question — dinner traffic near {locality} is active tonight. Want me to push your combo meal to capture walk-ins?",
+                    f"Quick question {display_name} — dinner traffic near {locality} is active tonight. Want me to push your combo meal to capture walk-ins?",
                     "Push Combo Tonight",
                     "Curiosity trigger + restaurant category + peak-hour traffic play."
                 )
             elif any(k in slug for k in ["gym", "fitness", "yoga"]):
                 return (
-                    f"Quick question — many {locality} users start fitness plans before summer. Want me to create a 7-day trial offer for your gym?",
+                    f"Quick question {display_name} — many {locality} users start fitness plans before summer. Want me to create a 7-day trial offer for your gym?",
                     "Create Trial Offer",
                     "Curiosity trigger + gym category + seasonal fitness acquisition."
                 )
             elif any(k in slug for k in ["pharmac", "medic", "chemist"]):
                 return (
-                    f"Quick question — refill demand in {locality} is rising. Want me to send monthly medicine reminder offers to your regulars?",
+                    f"Quick question {display_name} — refill demand in {locality} is rising. Want me to send monthly medicine reminder offers to your regulars?",
                     "Send Refill Reminders",
                     "Curiosity trigger + pharmacy category + retention automation."
                 )
 
         # ---- recall_due: Re-engage lapsed customers ----
         elif "recall" in kind:
-            if any(k in slug for k in ["dentist", "dental"]):
-                name_c = name if name.lower().startswith("dr") else f"Dr. {name}"
+            if is_dentist:
                 return (
-                    f"{name_c}, some patients haven't visited in 6+ months. Should we send a gentle recall with a ₹199 cleaning offer?",
+                    f"{display_name}, some patients haven't visited in 6+ months. Should we send a gentle recall with a ₹199 cleaning offer?",
                     "Send Recall",
                     "Recall trigger: reactivating lapsed patients with entry-level offer."
                 )
             elif any(k in slug for k in ["salon", "beauty", "spa"]):
                 return (
-                    f"Hi {name}, several clients haven't booked in 60+ days. Want me to send a '20% off your next visit' recall message?",
+                    f"Hi {display_name}, several clients haven't booked in 60+ days. Want me to send a '20% off your next visit' recall message?",
                     "Send Recall Offer",
                     "Recall trigger: lapsed salon clients with win-back discount."
                 )
             elif any(k in slug for k in ["restaurant", "food", "cafe"]):
                 return (
-                    f"Hi {name}, some regulars haven't ordered in 30 days. Should we push a 'We miss you' combo deal to bring them back?",
+                    f"Hi {display_name}, some regulars haven't ordered in 30 days. Should we push a 'We miss you' combo deal to bring them back?",
                     "Send Win-Back Offer",
                     "Recall trigger: re-engaging lapsed diners with a win-back deal."
                 )
             elif any(k in slug for k in ["gym", "fitness", "yoga"]):
                 return (
-                    f"Hi {name}, several members have stopped checking in. Want to send a 'Come back' free session pass to reactivate them?",
+                    f"Hi {display_name}, several members have stopped checking in. Want to send a 'Come back' free session pass to reactivate them?",
                     "Send Re-Activation",
                     "Recall trigger: reactivating churned gym members."
                 )
             elif any(k in slug for k in ["pharmac", "medic", "chemist"]):
                 return (
-                    f"Hi {name}, 45 refill customers are overdue this week. Should we send them a reminder to avoid running out?",
+                    f"Hi {display_name}, 45 refill customers are overdue this week. Should we send them a reminder to avoid running out?",
                     "Send Refill Alert",
                     "Recall trigger: automating pharmaceutical refill reminders."
                 )
 
         # ---- traffic_spike: Capitalize on real-time demand surge ----
         elif "traffic" in kind or "spike" in kind or "demand" in kind:
-            if any(k in slug for k in ["dentist", "dental"]):
-                name_c = name if name.lower().startswith("dr") else f"Dr. {name}"
+            if is_dentist:
                 return (
-                    f"{name_c}, searches for dental care in {locality} are up 40% today. Let's push your teeth-whitening offer to capture this intent now.",
+                    f"{display_name}, searches for dental care in {locality} are up 40% today. Let's push your teeth-whitening offer to capture this intent now.",
                     "Boost Whitening Offer",
                     "Traffic spike: capturing high-intent dental searches in locality."
                 )
             elif any(k in slug for k in ["salon", "beauty", "spa"]):
                 return (
-                    f"Hi {name}, {locality} is buzzing! Beauty searches spiked — want to push a 'Walk-in Welcome' deal to capture the demand?",
+                    f"Hi {display_name}, {locality} is buzzing! Beauty searches spiked — want to push a 'Walk-in Welcome' deal to capture the demand?",
                     "Push Walk-in Deal",
                     "Traffic spike: converting intent into same-day salon bookings."
                 )
             elif any(k in slug for k in ["restaurant", "food", "cafe"]):
                 return (
-                    f"Hi {name}, food delivery searches near {locality} just spiked! Ready to go live with a '15% off first order' flash deal?",
+                    f"Hi {display_name}, food delivery searches near {locality} just spiked! Ready to go live with a '15% off first order' flash deal?",
                     "Go Live Now",
                     "Traffic spike: converting surge in food intent into immediate orders."
                 )
             elif any(k in slug for k in ["gym", "fitness", "yoga"]):
                 return (
-                    f"Hi {name}, fitness searches in {locality} spiked this morning. Should we run a 'Flash Membership' offer for the next 3 hours?",
+                    f"Hi {display_name}, fitness searches in {locality} spiked this morning. Should we run a 'Flash Membership' offer for the next 3 hours?",
                     "Launch Flash Offer",
                     "Traffic spike: converting high-intent gym searches to memberships."
                 )
             elif any(k in slug for k in ["pharmac", "medic", "chemist"]):
                 return (
-                    f"Hi {name}, health product searches in {locality} are trending. Want to boost visibility for your top-selling OTC medicines?",
+                    f"Hi {display_name}, health product searches in {locality} are trending. Want to boost visibility for your top-selling OTC medicines?",
                     "Boost Visibility",
                     "Traffic spike: capturing pharmacy intent during health search surge."
                 )
 
         # ---- flash_sale / dip: Counter slow periods ----
         elif any(k in kind for k in ["flash", "dip", "slow"]):
-            if any(k in slug for k in ["dentist", "dental"]):
-                name_c = name if name.lower().startswith("dr") else f"Dr. {name}"
+            if is_dentist:
                 return (
-                    f"{name_c}, appointments are a bit slow today. Want to run a 2-hour window for ₹499 combo (cleaning + X-ray) to fill slots?",
+                    f"{display_name}, appointments are a bit slow today. Want to run a 2-hour window for ₹499 checkup & cleaning to fill slots?",
                     "Fill Today's Slots",
-                    "Dip trigger: yield management via discounted combo to fill idle time."
+                    "Dip trigger: yield management via discounted cleaning to fill idle time."
                 )
             elif any(k in slug for k in ["salon", "beauty", "spa"]):
                 return (
-                    f"Hi {name}, bookings look light this afternoon. Launch a '2-hour flash: 30% off any service' to attract walk-ins in {locality}?",
+                    f"Hi {display_name}, bookings look light this afternoon. Launch a '2-hour flash: 30% off any service' to attract walk-ins in {locality}?",
                     "Launch Flash Deal",
                     "Dip trigger: converting idle capacity into same-day bookings."
                 )
             elif any(k in slug for k in ["restaurant", "food", "cafe"]):
                 return (
-                    f"Hi {name}, lunch rush is slower than usual. A quick '₹99 lunch combo' flash deal could pull in nearby magicpin users. Go?",
+                    f"Hi {display_name}, lunch rush is slower than usual. A quick '₹99 lunch combo' flash deal could pull in nearby magicpin users. Go?",
                     "Start Lunch Flash",
                     "Dip trigger: driving incremental covers during low-traffic lunch."
                 )
             elif any(k in slug for k in ["gym", "fitness", "yoga"]):
                 return (
-                    f"Hi {name}, the gym is quieter than usual today. Want to offer a '₹99 Day Pass' flash to attract walk-ins from {locality}?",
+                    f"Hi {display_name}, the gym is quieter than usual today. Want to offer a '₹99 Day Pass' flash to attract walk-ins from {locality}?",
                     "Sell Day Pass",
                     "Dip trigger: filling empty gym floor time with day-pass flash."
                 )
             elif any(k in slug for k in ["pharmac", "medic", "chemist"]):
                 return (
-                    f"Hi {name}, walk-in traffic is low. Want to push a '10% off vitamins today only' deal to drive impulse wellness purchases?",
+                    f"Hi {display_name}, walk-in traffic is low. Want to push a '10% off vitamins today only' deal to drive impulse wellness purchases?",
                     "Run Vitamin Flash",
                     "Dip trigger: driving impulse purchases during low foot-traffic."
                 )
 
         # ---- Generic fallback (unknown kind) ----
-        if any(k in slug for k in ["dentist", "dental"]):
-            name_c = name if name.lower().startswith("dr") else f"Dr. {name}"
+        if is_dentist:
             return (
-                f"{name_c}, 190 people searched for teeth cleaning nearby today. Should we launch a ₹299 checkup offer to capture this demand?",
+                f"{display_name}, 190 people searched for teeth cleaning nearby today. Should we launch a ₹299 checkup offer to capture this demand?",
                 "Launch ₹299 Offer",
                 "Category-driven proactive engagement for dental vertical."
             )
         elif any(k in slug for k in ["salon", "beauty", "spa"]):
             return (
-                f"Hi {name}, weekend booking demand in {locality} is rising! Want to promote a 'Hair Spa Weekend' at 20% off to fill your last slots?",
+                f"Hi {display_name}, weekend booking demand in {locality} is rising! Want to promote a 'Hair Spa Weekend' at 20% off to fill your last slots?",
                 "Promote 20% Off",
                 "Category-driven proactive engagement for salon vertical."
             )
         elif any(k in slug for k in ["restaurant", "food", "cafe"]):
             return (
-                f"Hi {name}, dinner traffic in {locality} is expected to be high tonight. Ready to boost your 'Bestseller Combo' to grab more orders?",
+                f"Hi {display_name}, dinner traffic in {locality} is expected to be high tonight. Ready to boost your 'Bestseller Combo' to grab more orders?",
                 "Boost Combo",
                 "Category-driven proactive engagement for restaurant vertical."
             )
         elif any(k in slug for k in ["gym", "fitness", "yoga"]):
             return (
-                f"Hi {name}, summer fitness searches are rising in {locality}. Should we relaunch your '7-Day Trial Membership' for the new crowd?",
+                f"Hi {display_name}, summer fitness searches are rising in {locality}. Should we relaunch your '7-Day Trial Membership' for the new crowd?",
                 "Relaunch Trial",
                 "Category-driven proactive engagement for gym vertical."
             )
         elif any(k in slug for k in ["pharmac", "medic", "chemist"]):
             return (
-                f"Hi {name}, 45 monthly refill customers in {locality} are due this week. Should we send a 'Health Refill' reminder campaign?",
+                f"Hi {display_name}, 45 monthly refill customers in {locality} are due this week. Should we send a 'Health Refill' reminder campaign?",
                 "Send Reminders",
                 "Category-driven proactive engagement for pharmacy vertical."
             )
         else:
             return (
-                f"Hi {name}, noticing some growth trends in {locality}. Ready to take a step with {offer_title}?",
+                f"Hi {display_name}, noticing some growth trends in {locality}. Ready to take a step with {offer_title}?",
                 "Check Trends",
                 f"Proactive merchant engagement based on locality performance benchmarks. Trigger: {trigger_kind}."
             )
+
 
     message, cta, strat_rationale = _resolve(trigger_kind, category_slug)
     message, val_rationale = _validate_and_repair(message, merchant_ctx)
@@ -345,9 +349,56 @@ def _deterministic_reply_intent(text: str, conversation_id: str) -> ReplyRespons
     merchant_id = conversation_id.replace("conv_", "")
     m_ctx = storage.get(("merchant", merchant_id), {}).get("payload", {})
     name = m_ctx.get("identity", {}).get("name", "merchant")
-    locality = m_ctx.get("identity", {}).get("locality", "the area")
+    locality = m_ctx.get("identity", {}).get("locality", "Lajpat Nagar")
     category = str(m_ctx.get("category_slug", "business")).lower()
+    
+    # Robust name cleaning to avoid "Dr. Dr."
+    name_clean = name.strip()
+    is_dentist = any(k in category for k in ["dentist", "dental"])
+    if is_dentist and not name_clean.lower().startswith("dr"):
+        display_name = f"Dr. {name_clean}"
+    else:
+        display_name = name_clean
 
+    # 1. Handle "hi / hello"
+    words = text_clean.split()
+    if any(h in words for h in ["hi", "hello", "hey"]):
+        reply = f"Hi {display_name}. Health searches are active in {locality} today. Want to run ₹299 checkup promo now?"
+        if not is_dentist: # Adapt if not a dentist
+            reply = f"Hi {display_name}. Activity in {locality} is picking up. Ready to run a new promo today?"
+        return ReplyResponse(reply=reply, action="send", cta="Launch Promo", rationale="Smart greeting with local context.")
+
+    # 2. Handle "sales are low"
+    elif "sales" in text_clean:
+        reply = f"Views are strong but conversions can improve. Launch ₹299 checkup offer today to capture nearby {locality} demand. Activate now?"
+        if not is_dentist:
+            reply = f"Traffic is steady but sales are soft. I recommend a flash offer to boost {locality} conversions. Want to launch?"
+        return ReplyResponse(reply=reply, action="send", cta="Activate now?", rationale="Sales recovery strategy.")
+
+    # 3. Handle "calls are low"
+    elif "calls" in text_clean:
+        reply = f"Calls are soft this week. Add a call-first CTA with ₹299 dental checkup to increase bookings in {locality}. Should I start it?"
+        if not is_dentist:
+            reply = f"Call volume is lower this week. Let's add a direct-call CTA to your {locality} campaign. Initiate?"
+        return ReplyResponse(reply=reply, action="send", cta="Start it?", rationale="Call-volume optimization.")
+
+    # 4. Handle "what should i run" / "how to boost"
+    elif any(k in text_clean for k in ["what should i run", "offer", "boost", "how to"]):
+        reply = f"Best option today: ₹299 Dental Checkup campaign targeting nearby {locality} search traffic. Launch now?"
+        if "boost" in text_clean and is_dentist:
+            reply = f"Health searches are peaking in {locality} today. Promote your ₹299 dental cleaning offer now to capture demand. Activate?"
+        elif not is_dentist:
+            reply = f"I recommend a localized 'Trending Deal' for {locality} users. It has the highest conversion potential today. Launch?"
+        return ReplyResponse(reply=reply, action="send", cta="Launch now?", rationale="Intent-based strategic recommendation.")
+
+    # 5. Handle "IPL"
+    elif "ipl" in text_clean:
+        reply = f"Hi {display_name}, IPL match tonight brings heavy footfall to {locality}! We should run a 'Match Day' special checkup till 9 PM. Ready to boost?"
+        if not is_dentist:
+            reply = f"IPL excitement is high in {locality}! A 'Match Day Combo' could drive heavy footfall tonight. Activate?"
+        return ReplyResponse(reply=reply, action="send", cta="Ready to boost?", rationale="Real-time event capture.")
+
+    # Standard fallbacks
     if any(i in text_clean for i in ["stop", "no", "not interested", "automated assistant"]):
         return ReplyResponse(reply="Understood. I will pause suggestions for now.", action="end", rationale="Merchant requested stop.")
     
@@ -360,11 +411,12 @@ def _deterministic_reply_intent(text: str, conversation_id: str) -> ReplyRespons
         )
 
     return ReplyResponse(
-        reply="Got it. I'll analyze your latest performance data and prepare a targeted growth plan. Should we proceed?",
+        reply="Nearby demand looks active today. Want me to recommend the best campaign for your clinic now?",
         action="send",
-        cta="Check Strategy",
-        rationale="Generic acknowledgement with intentional call to action."
+        cta="Recommend",
+        rationale="Strong default fallback with proactive CTA."
     )
+
 
 def generate_growth_action(trigger_id: str, trigger_payload: Dict[str, Any]) -> Optional[ActionObject]:
     if not has_openai or not os.environ.get("OPENAI_API_KEY"):
