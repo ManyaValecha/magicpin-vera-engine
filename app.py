@@ -609,9 +609,10 @@ def get_health():
     return HealthzResponse(
         status="ok",
         service="vera-growth-engine",
-        version="1.0.0",
+        version="1.1.0",
         contexts_loaded=counts
     )
+
 
 
 @app.get("/v1/metadata", response_model=MetadataResponse)
