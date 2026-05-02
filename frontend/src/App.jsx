@@ -93,6 +93,20 @@ const NavItem = ({ icon: Icon, label, active, onClick }) => (
     </button>
 );
 
+const VerticalItem = ({ label, category, onClick, icon: Icon }) => (
+    <button
+        onClick={onClick}
+        className="w-full flex items-center justify-between px-3 py-1.5 rounded-md text-[11px] font-semibold text-[#8a8b91] hover:text-white hover:bg-[#1c1c1f] transition-all group"
+    >
+        <div className="flex items-center gap-2">
+            <Icon size={12} className="group-hover:text-indigo-400" />
+            {label}
+        </div>
+        <span className="text-[9px] bg-[#1c1c1f] px-1.5 py-0.5 rounded border border-[#2b2b2f] text-[#4a4b50] group-hover:border-indigo-500/30 group-hover:text-indigo-400">{category}</span>
+    </button>
+);
+
+
 const App = () => {
     const [activeTab, setActiveTab] = useState('merchant');
     const [jsonInput, setJsonInput] = useState(JSON.stringify(DEMO_DATA.merchant, null, 2));
@@ -117,6 +131,19 @@ const App = () => {
         }, ...prev].slice(0, 50));
     }, []);
 
+    const loadScenario = (slug, name, locality) => {
+        const payload = {
+            merchant_id: `m_demo_${slug}`,
+            category_slug: slug,
+            identity: { name, locality, city: "Delhi" },
+            performance: { views: 1500, calls: 12, ctr: 0.015 }
+        };
+        setActiveTab('merchant');
+        setJsonInput(JSON.stringify(payload, null, 2));
+        addLog(`Loaded scenario: ${name}`, 'info');
+    };
+
+
     const fetchStats = useCallback(async () => {
         try {
             const resp = await fetch(`${API_BASE}/v1/healthz`);
@@ -124,8 +151,9 @@ const App = () => {
             setStats(prev => ({
                 ...prev,
                 status: data.status === 'ok' ? 'Online' : 'Warning',
-                contexts: prev.contexts // healthz no longer returns contexts_loaded
+                contexts: data.contexts_loaded || prev.contexts
             }));
+
         } catch (e) {
             setStats(prev => ({ ...prev, status: 'Offline' }));
         }
@@ -249,6 +277,16 @@ const App = () => {
                     <NavItem icon={Zap} label="Trigger" active={activeTab === 'trigger'} onClick={() => { setActiveTab('trigger'); setJsonInput(JSON.stringify(DEMO_DATA.trigger, null, 2)) }} />
                     <NavItem icon={Layers} label="Customer" active={activeTab === 'customer'} onClick={() => { setActiveTab('customer'); setJsonInput(JSON.stringify(DEMO_DATA.customer, null, 2)) }} />
                     <NavItem icon={Activity} label="Category" active={activeTab === 'category'} onClick={() => { setActiveTab('category'); setJsonInput(JSON.stringify(DEMO_DATA.category, null, 2)) }} />
+
+                    <p className="px-3 text-[10px] font-bold text-[#4a4b50] uppercase tracking-widest mb-2 mt-8">Scenarios</p>
+                    <div className="px-2 space-y-0.5">
+                        <VerticalItem label="🦷 Dental Clinic" category="Dentists" icon={Zap} onClick={() => loadScenario('dentists', "Dr. Meera's Dental Clinic", "Lajpat Nagar")} />
+                        <VerticalItem label="🏋️ Elite Gym" category="Gyms" icon={Zap} onClick={() => loadScenario('gyms', "Iron Paradise Gym", "Saket")} />
+                        <VerticalItem label="💇 Luxury Salon" category="Salons" icon={Zap} onClick={() => loadScenario('salons', "Glow & Style Salon", "GK-1")} />
+                        <VerticalItem label="🍕 Pizza Hub" category="Food" icon={Zap} onClick={() => loadScenario('restaurants', "The Pizza Hub", "Connaught Place")} />
+                        <VerticalItem label="💊 MediPharmacy" category="Pharmacy" icon={Zap} onClick={() => loadScenario('pharmacies', "HealWell Pharmacy", "Hauz Khas")} />
+                    </div>
+
 
                     <p className="px-3 text-[10px] font-bold text-[#4a4b50] uppercase tracking-widest mb-2 mt-8">Monitoring</p>
                     <button className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-[#8a8b91] hover:bg-[#1c1c1f]">

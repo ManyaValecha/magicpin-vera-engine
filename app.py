@@ -24,6 +24,8 @@ class HealthzResponse(BaseModel):
     status: str
     service: str
     version: str
+    contexts_loaded: Dict[str, int]
+
 
 class MetadataResponse(BaseModel):
     name: str
@@ -371,60 +373,71 @@ def _deterministic_reply_intent(text: str, conversation_id: str) -> ReplyRespons
     # Intent Templates Matrix
     templates = {
         "hi": {
-            "dentist": f"Hi {display_name}. Health searches are active in {locality} today. Want to run ₹299 checkup promo now?",
-            "gym": f"Hi {display_name}. Fitness searches are peaking in {locality}! Ready to launch a 7-day trial offer?",
-            "salon": f"Hi {display_name}. Self-care interest is high in {locality} today. Should we push a 'New Look' makeover deal?",
-            "food": f"Hi {display_name}. Dining demand near {locality} is rising. Ready to boost your 'Quick Lunch' combo?",
-            "pharmacy": f"Hi {display_name}. Health utility searches are active in {locality}. Want to run a delivery-first promo?",
-            "generic": f"Hi {display_name}. Nearby demand in {locality} is active today. Want to launch a high-conversion offer now?"
+            "dentist": f"Hi {display_name}. Health searches are up 22% in {locality} today. Want to run ₹299 checkup promo now?",
+            "gym": f"Hi {display_name}. Fitness searches are peaking at 1.4k+ in {locality}! Ready to launch a 7-day trial offer?",
+            "salon": f"Hi {display_name}. Self-care interest is up 15% in {locality} today. Should we push a 'New Look' makeover deal?",
+            "food": f"Hi {display_name}. Dining demand near {locality} is up 30% for lunch. Ready to boost your 'Quick Lunch' combo?",
+            "pharmacy": f"Hi {display_name}. Health utility searches are active in {locality} (400+ today). Want to run a delivery-first promo?",
+            "generic": f"Hi {display_name}. Nearby demand in {locality} is up 18% today. Want to launch a high-conversion offer now?"
         },
         "sales": {
-            "dentist": f"Views are strong but conversions can improve. Launch ₹299 checkup offer today to capture nearby {locality} demand. Activate?",
-            "gym": f"Traffic is active but sign-ups are soft. A ₹499 membership trial could boost {locality} conversions. Launch?",
-            "salon": f"Views are high! A 'Bridal Preview' or 'Glow Deal' would convert this {locality} traffic into bookings. Activate?",
-            "food": f"Footfall is strong but orders are soft. A 'Flash Combo' for the next 2 hours can capture {locality} demand. Start?",
-            "pharmacy": f"Search volume is good. Let's push an 'Essentials Bundle' to boost your {locality} sales today. Activate?",
-            "generic": f"Views are strong but conversions can improve. I recommend a localized flash offer for {locality} users. Launch?"
+            "dentist": f"Views are strong (2.1k+) but conversions are at 1.2%. Launch ₹299 checkup offer today to capture nearby {locality} demand. Activate?",
+            "gym": f"Traffic is active but sign-ups are soft (down 10%). A ₹499 membership trial could boost {locality} conversions. Launch?",
+            "salon": f"Views are high (900+ this week). A 'Glow Deal' would convert this {locality} traffic into bookings. Activate?",
+            "food": f"Footfall is strong but orders are soft (below 5%). A 'Flash Combo' for the next 2 hours can capture {locality} demand. Start?",
+            "pharmacy": f"Search volume is good (150+ per day). Let's push an 'Essentials Bundle' to boost your {locality} sales today. Activate?",
+            "generic": f"Views are strong (1.5k+) but conversions can improve by 2x. I recommend a localized flash offer for {locality} users. Launch?"
         },
         "calls": {
-            "dentist": f"Calls are soft this week. Add a call-first CTA with ₹299 dental checkup to increase bookings in {locality}. Should I start it?",
-            "gym": f"Call volume is low. Let's add a 'Book a Free Trial' CTA to your {locality} ads to drive appointments. Start?",
-            "salon": f"Inquiries are light. A call-based 'Style Consultation' offer can fill your slots in {locality}. Initiate?",
-            "food": f"Booking calls are soft. Let's add a 'Call for Table Reservation' CTA to capture more {locality} diners. Go?",
-            "pharmacy": f"Prescription inquiries are down. A direct call-for-delivery CTA could increase your {locality} orders. Start?",
-            "generic": f"Call volume is lower this week. Let's add a direct-call CTA to your {locality} campaign for better reach. Go?"
+            "dentist": f"Calls are soft this week (down 12%). Add a call-first CTA with ₹299 dental checkup to increase bookings in {locality}. Should I start it?",
+            "gym": f"Call volume is low (only 4 this week). Let's add a 'Book a Free Trial' CTA to your {locality} ads to drive appointments. Start?",
+            "salon": f"Inquiries are light (down 20%). A call-based 'Style Consultation' offer can fill your 5 open slots in {locality}. Initiate?",
+            "food": f"Booking calls are soft (3 per day). Let's add a 'Call for Table Reservation' CTA to capture more {locality} diners. Go?",
+            "pharmacy": f"Prescription inquiries are down 15%. A direct call-for-delivery CTA could increase your {locality} orders. Start?",
+            "generic": f"Call volume is lower this week (down 10%). Let's add a direct-call CTA to your {locality} campaign for better reach. Go?"
         },
         "recommend": {
-            "dentist": f"Best option today: ₹299 Dental Checkup campaign targeting nearby {locality} search traffic. Launch now?",
-            "gym": f"Top recommendation: '7-Day Summer Restart' membership drive for {locality} fitness seekers. Launch?",
-            "salon": f"Best for you today: 'Weekend Glow' bridal/makeup special. Captures current {locality} booking spikes. Run?",
-            "food": f"Recommended play: 'Evening Family Combo' targeting {locality} dinner traffic. Launch and capture orders?",
-            "pharmacy": f"Strategic choice: 'Health Essentials Refill' push for your top 50 {locality} customers. Send now?",
-            "generic": f"Best option today: A targeted 'Trending Offer' for {locality} search traffic. Launch now?"
+            "dentist": f"Best option today: ₹299 Dental Checkup campaign targeting 1.2k+ nearby {locality} search traffic. Launch now?",
+            "gym": f"Top recommendation: '7-Day Summer Restart' membership drive for 400+ {locality} fitness seekers. Launch?",
+            "salon": f"Best for you today: 'Weekend Glow' special. Captures current 2x booking spikes in {locality}. Run?",
+            "food": f"Recommended play: 'Evening Family Combo' targeting 800+ {locality} dinner traffic. Launch and capture orders?",
+            "pharmacy": f"Strategic choice: 'Health Essentials Refill' push for your 50+ overdue {locality} customers. Send now?",
+            "generic": f"Best option today: A targeted 'Trending Offer' for 1k+ {locality} search traffic. Launch now?"
         },
         "ipl": {
-            "food": f"Hi {display_name}, IPL match tonight brings heavy footfall! A 'Match Day Combo' will drive massive orders. Ready?",
-            "dentist": f"Hi {display_name}, IPL excitement is high in {locality}! A 'Match Day Shine' special checkup till 9 PM could capture footfall. Ready?",
-            "salon": f"Hi {display_name}, IPL traffic is heavy tonight. A 'Quick Match-Day Grooming' special can attract walk-ins. Ready?",
-            "gym": f"Hi {display_name}, IPL buzz is peak! A 'Match Day Fitness Trial' could drive high footfall tonight. Activate?",
-            "pharmacy": f"Hi {display_name}, IPL traffic is rising. Boost your 'Match-Day Essentials' visibility to capture demand. Go?",
-            "generic": f"IPL excitement is peak in {locality}! A 'Match Day Special' can drive heavy footfall tonight. Activate?"
+            "food": f"Hi {display_name}, IPL match tonight brings 3k+ footfall! A 'Match Day Combo' will drive massive orders. Ready?",
+            "dentist": f"Hi {display_name}, IPL excitement is up 40% in {locality}! A 'Match Day Shine' special checkup till 9 PM could capture footfall. Ready?",
+            "salon": f"Hi {display_name}, IPL traffic is heavy tonight (2k+ nearby). A 'Quick Match-Day Grooming' special can attract walk-ins. Ready?",
+            "gym": f"Hi {display_name}, IPL buzz is peak! A 'Match Day Fitness Trial' could drive 50+ walk-ins tonight. Activate?",
+            "pharmacy": f"Hi {display_name}, IPL traffic is rising (up 25%). Boost your 'Match-Day Essentials' visibility to capture demand. Go?",
+            "generic": f"IPL excitement is peak in {locality} (2.5k+ searches)! A 'Match Day Special' can drive heavy footfall tonight. Activate?"
+        },
+        "confirm": {
+            "dentist": f"Perfect {display_name}! I've initiated the ₹299 checkup campaign. We expect 15+ new bookings based on {locality} trends. Anything else?",
+            "gym": f"Great choice! The 7-day trial offer is now live for 1.4k+ users in {locality}. I'll monitor the sign-ups for you.",
+            "salon": f"Excellent! {display_name}'s 'Glow Special' is being pushed to 900+ nearby users now. Ready to capture the demand?",
+            "food": f"Order confirmed! Your 'Flash Combo' is now live for 800+ {locality} diners. Keep an eye on your prep station!",
+            "pharmacy": f"Tasked! The 'Essentials Refill' reminders have been sent to your 50+ {locality} regulars. I'll track the results.",
+            "generic": f"Understood! I've activated the recommended strategy for your business. I'll track the performance and keep you posted."
         }
     }
+
 
     # Intent selection
     intent = None
     if any(h in words for h in ["hi", "hello", "hey"]): intent = "hi"
-    elif "sales" in text_clean: intent = "sales"
-    elif "calls" in text_clean: intent = "calls"
+    elif any(k in text_clean for k in ["sales", "performance", "revenue"]): intent = "sales"
+    elif any(k in text_clean for k in ["calls", "leads", "booking"]): intent = "calls"
     elif any(k in text_clean for k in ["what should i run", "offer", "recommend", "how to"]): intent = "recommend"
     elif "boost" in text_clean and intent is None: intent = "recommend"
     elif "ipl" in text_clean: intent = "ipl"
+    elif any(k in words for k in ["yes", "ok", "sure", "activate", "do it", "proceed", "start"]): intent = "confirm"
 
     if intent:
         reply = templates[intent].get(cat_kind, templates[intent]["generic"])
-        ctas = {"hi": "Launch Promo", "sales": "Activate Now", "calls": "Start Ads", "recommend": "Launch Campaign", "ipl": "Activate"}
+        ctas = {"hi": "Launch Promo", "sales": "Activate Now", "calls": "Start Ads", "recommend": "Launch Campaign", "ipl": "Activate", "confirm": "Open Dashboard"}
         return ReplyResponse(reply=reply, action="send", cta=ctas.get(intent, "Get Started"), rationale=f"Intent: {intent}, Category: {cat_kind}")
+
 
     # Standard fallbacks
     if any(i in text_clean for i in ["stop", "no", "not interested", "automated assistant"]):
@@ -588,11 +601,18 @@ app.add_middleware(
 
 @app.get("/v1/healthz", response_model=HealthzResponse)
 def get_health():
+    counts = {"category": 0, "merchant": 0, "customer": 0, "trigger": 0}
+    for scope, _ in storage.keys():
+        if scope in counts:
+            counts[scope] += 1
+            
     return HealthzResponse(
         status="ok",
         service="vera-growth-engine",
-        version="1.0.0"
+        version="1.0.0",
+        contexts_loaded=counts
     )
+
 
 @app.get("/v1/metadata", response_model=MetadataResponse)
 def get_metadata():
