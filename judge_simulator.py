@@ -369,7 +369,6 @@ def create_provider() -> LLMProvider:
         "ollama": lambda: OllamaProvider(LLM_MODEL, OLLAMA_URL),
         "openrouter": lambda: OpenRouterProvider(LLM_API_KEY, LLM_MODEL),
         "cohere": lambda: CohereProvider(LLM_API_KEY, LLM_MODEL),
-        "cohere": lambda: CohereProvider(LLM_API_KEY, LLM_MODEL),
     }
 
     if LLM_PROVIDER not in providers:
