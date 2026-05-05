@@ -1,0 +1,342 @@
+
+[95m[1m======================================================================[0m
+[95m[1m                  magicpin AI Challenge — LLM Judge                   [0m
+[95m[1m======================================================================[0m
+
+[94m[INFO][0m LLM Provider: Cohere (command-r-plus-08-2024)
+[94m[INFO][0m Testing LLM connection...
+[92m[PASS][0m LLM connected successfully
+
+[95m[1m======================================================================[0m
+[95m[1m                     LLM JUDGE — FULL_EVALUATION                      [0m
+[95m[1m======================================================================[0m
+
+[94m[INFO][0m Bot: http://localhos
+[95m[1m======================================================================[0m
+[95m[1m                  magicpin AI Challenge — LLM Judge                   [0m
+[95m[1m======================================================================[0m
+
+[94m[INFO][0m LLM Provider: Cohere (command-r-plus-08-2024)
+[94m[INFO][0m Testing LLM connection...
+[92m[PASS][0m LLM connected successfully
+
+[95m[1m======================================================================[0m
+[95m[1m                     LLM JUDGE — FULL_EVALUATION                      [0m
+[95m[1m======================================================================[0m
+
+[94m[INFO][0m Bot: http://localhost:8080
+[94m[INFO][0m LLM: Cohere (command-r-plus-08-2024)
+[94m[INFO][0m Loaded: 5 categories, 10 merchants, 25 triggers
+
+[96m[1m--- WARMUP ---[0m
+
+[92m[PASS][0m healthz (4ms)
+[92m[PASS][0m metadata — Team: ?, Model: gpt-4o-mini / deterministic-hybrid
+
+[96m[1m--- CONTEXT PUSH ---[0m
+
+  [PASS] category/dentists
+  [PASS] category/gyms
+  [PASS] category/salons
+  [PASS] category/pharmacies
+  [PASS] category/restaurants
+  [PASS] merchant/001
+  [PASS] merchant/002
+  [PASS] merchant/003
+  [PASS] merchant/004
+  [PASS] merchant/005
+
+[96m[1m--- FULL EVALUATION ---[0m
+
+[92m[PASS][0m All contexts pushed
+
+[96m[1m--- SCORING COMPOSITIONS ---[0m
+
+[94m[INFO][0m Batch 1: 5 actions (33969ms)
+[35m[LLM][0m Analyzing message...
+
+[96mMessage:[0m "Dr. Meera, Lajpat Nagar mein aapke clinic ke liye ..."
+  Specificity            [[92m████████████████[2m░░░░[0m] [92m 8/10[0m
+  Category Fit           [[92m██████████████████[2m░░[0m] [92m 9/10[0m
+  Merchant Fit           [[92m████████████████[2m░░░░[0m] [92m 8/10[0m
+  Decision Quality       [[92m████████████████[2m░░░░[0m] [92m 8/10[0m
+  Engagement             [[92m██████████████[2m░░░░░░[0m] [92m 7/10[0m
+
+  [1mTOTAL: 40/50[0m
+[35m[LLM][0m Analyzing message...
+
+[96mMessage:[0m "Dr. Meera, DCI ne naye guidelines nikalke rakhe ha..."
+  Specificity            [[92m██████████████████[2m░░[0m] [92m 9/10[0m
+  Category Fit           [[92m████████████████[2m░░░░[0m] [92m 8/10[0m
+  Merchant Fit           [[92m████████████████[2m░░░░[0m] [92m 8/10[0m
+  Decision Quality       [[92m████████████████[2m░░░░[0m] [92m 8/10[0m
+  Engagement             [[92m██████████████████[2m░░[0m] [92m 9/10[0m
+
+  [1mTOTAL: 42/50[0m
+[35m[LLM][0m Analyzing message...
+
+[96mMessage:[0m "Dr. Meera, Priya को 6 महीने की सफाई की याद दिलाने ..."
+  Specificity            [[92m████████████████[2m░░░░[0m] [92m 8/10[0m
+  Category Fit           [[92m██████████████████[2m░░[0m] [92m 9/10[0m
+  Merchant Fit           [[92m██████████████████[2m░░[0m] [92m 9/10[0m
+  Decision Quality       [[92m████████████████[2m░░░░[0m] [92m 8/10[0m
+  Engagement             [[92m██████████████[2m░░░░░░[0m] [92m 7/10[0m
+
+  [1mTOTAL: 41/50[0m
+[35m[LLM][0m Analyzing message...
+
+[96mMessage:[0m "Dr. Bharat, aapke calls mein 7 din mein 50% ka dip..."
+  Specificity            [[92m████████████████[2m░░░░[0m] [92m 8/10[0m
+  Category Fit           [[92m██████████████████[2m░░[0m] [92m 9/10[0m
+  Merchant Fit           [[92m████████████████[2m░░░░[0m] [92m 8/10[0m
+  Decision Quality       [[92m██████████████[2m░░░░░░[0m] [92m 7/10[0m
+  Engagement             [[92m██████████████[2m░░░░░░[0m] [92m 7/10[0m
+
+  [1mTOTAL: 39/50[0m
+[35m[LLM][0m Analyzing message...
+
+[96mMessage:[0m "Dr. Bharat, aapka Pro plan 12 din mein renew hona ..."
+  Specificity            [[92m██████████████[2m░░░░░░[0m] [92m 7/10[0m
+  Category Fit           [[92m████████████████[2m░░░░[0m] [92m 8/10[0m
+  Merchant Fit           [[92m██████████████████[2m░░[0m] [92m 9/10[0m
+  Decision Quality       [[92m██████████████[2m░░░░░░[0m] [92m 7/10[0m
+  Engagement             [[92m████████████████[2m░░░░[0m] [92m 8/10[0m
+
+  [1mTOTAL: 39/50[0m
+[94m[INFO][0m Batch 2: 5 actions (8253ms)
+[35m[LLM][0m Analyzing message...
+[93m[WARN][0m LLM error: HTTP Error 429: Too Many Requests
+
+[96mMessage:[0m "Lakshmi, Diwali is 188 days away, but bridal trial..."
+  Specificity            [[92m██████████████[2m░░░░░░[0m] [92m 7/10[0m
+  Category Fit           [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Merchant Fit           [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Decision Quality       [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Engagement             [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+
+  [1mTOTAL: 27/50[0m
+[35m[LLM][0m Analyzing message...
+[93m[WARN][0m LLM error: HTTP Error 429: Too Many Requests
+
+[96mMessage:[0m "Lakshmi, bridal season is here! Your trial with Ka..."
+  Specificity            [[92m██████████████[2m░░░░░░[0m] [92m 7/10[0m
+  Category Fit           [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Merchant Fit           [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Decision Quality       [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Engagement             [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+
+  [1mTOTAL: 27/50[0m
+[35m[LLM][0m Analyzing message...
+[93m[WARN][0m LLM error: HTTP Error 429: Too Many Requests
+
+[96mMessage:[0m "Quick question Studio11 Family Salon — self-care s..."
+  Specificity            [[92m██████████████████[2m░░[0m] [92m 9/10[0m
+  Category Fit           [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Merchant Fit           [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Decision Quality       [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Engagement             [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+
+  [1mTOTAL: 29/50[0m
+[35m[LLM][0m Analyzing message...
+[93m[WARN][0m LLM error: HTTP Error 429: Too Many Requests
+
+[96mMessage:[0m "Hi Glamour Lounge Spa & Salon, weekend booking dem..."
+  Specificity            [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Category Fit           [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Merchant Fit           [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Decision Quality       [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Engagement             [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+
+  [1mTOTAL: 25/50[0m
+[35m[LLM][0m Analyzing message...
+[93m[WARN][0m LLM error: HTTP Error 429: Too Many Requests
+
+[96mMessage:[0m "Hi SK Pizza Junction, dinner traffic in Sant Nagar..."
+  Specificity            [[92m██████████████████[2m░░[0m] [92m 9/10[0m
+  Category Fit           [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Merchant Fit           [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Decision Quality       [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Engagement             [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+
+  [1mTOTAL: 29/50[0m
+[94m[INFO][0m Batch 3: 5 actions (1722ms)
+[35m[LLM][0m Analyzing message...
+[93m[WARN][0m LLM error: HTTP Error 429: Too Many Requests
+
+[96mMessage:[0m "Hi SK Pizza Junction, dinner traffic in Sant Nagar..."
+  Specificity            [[92m██████████████████[2m░░[0m] [92m 9/10[0m
+  Category Fit           [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Merchant Fit           [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Decision Quality       [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Engagement             [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+
+  [1mTOTAL: 29/50[0m
+[35m[LLM][0m Analyzing message...
+[93m[WARN][0m LLM error: HTTP Error 429: Too Many Requests
+
+[96mMessage:[0m "Hi Mylari South Indian Cafe, dinner traffic in Ind..."
+  Specificity            [[92m██████████████[2m░░░░░░[0m] [92m 7/10[0m
+  Category Fit           [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Merchant Fit           [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Decision Quality       [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Engagement             [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+
+  [1mTOTAL: 27/50[0m
+[35m[LLM][0m Analyzing message...
+[93m[WARN][0m LLM error: HTTP Error 429: Too Many Requests
+
+[96mMessage:[0m "Hi Mylari South Indian Cafe, dinner traffic in Ind..."
+  Specificity            [[92m██████████████[2m░░░░░░[0m] [92m 7/10[0m
+  Category Fit           [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Merchant Fit           [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Decision Quality       [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Engagement             [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+
+  [1mTOTAL: 27/50[0m
+[35m[LLM][0m Analyzing message...
+[93m[WARN][0m LLM error: HTTP Error 429: Too Many Requests
+
+[96mMessage:[0m "Hi PowerHouse Fitness, gym floor is quiet. Want to..."
+  Specificity            [[92m██████████████[2m░░░░░░[0m] [92m 7/10[0m
+  Category Fit           [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Merchant Fit           [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Decision Quality       [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Engagement             [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+
+  [1mTOTAL: 27/50[0m
+[35m[LLM][0m Analyzing message...
+[93m[WARN][0m LLM error: HTTP Error 429: Too Many Requests
+
+[96mMessage:[0m "Hi PowerHouse Fitness, summer fitness searches are..."
+  Specificity            [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Category Fit           [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Merchant Fit           [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Decision Quality       [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Engagement             [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+
+  [1mTOTAL: 25/50[0m
+[94m[INFO][0m Batch 4: 5 actions (1816ms)
+[35m[LLM][0m Analyzing message...
+[93m[WARN][0m LLM error: HTTP Error 429:[94m[INFO][0m Batch 4: 5 actions (5320ms)
+[35m[LLM][0m Analyzing message...
+[93m[WARN][0m LLM error: HTTP Error 429: Too Many Requests
+
+[96mMessage:[0m "Hi Zen Yoga Studio, summer fitness searches are ri..."
+  Specificity            [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Category Fit           [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Merchant Fit           [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Decision Quality       [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Engagement             [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+
+  [1mTOTAL: 25/50[0m
+[35m[LLM][0m Analyzing message...
+[93m[WARN][0m LLM error: HTTP Error 429: Too Many Requests
+
+[96mMessage:[0m "Hi Zen Yoga Studio, summer fitness searches are ri..."
+  Specificity            [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Category Fit           [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Merchant Fit           [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Decision Quality       [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Engagement             [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+
+  [1mTOTAL: 25/50[0m
+[35m[LLM][0m Analyzing message...
+[93m[WARN][0m LLM error: HTTP Error 429: Too Many Requests
+
+[96mMessage:[0m "Hi Apollo Health Plus Pharmacy, 45 monthly refill ..."
+  Specificity            [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Category Fit           [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Merchant Fit           [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Decision Quality       [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Engagement             [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+
+  [1mTOTAL: 25/50[0m
+[35m[LLM][0m Analyzing message...
+[93m[WARN][0m LLM error: HTTP Error 429: Too Many Requests
+
+[96mMessage:[0m "Ramesh, 240+ chronic-Rx patients trust your care. ..."
+  Specificity            [[92m██████████████[2m░░░░░░[0m] [92m 7/10[0m
+  Category Fit           [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Merchant Fit           [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Decision Quality       [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Engagement             [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+
+  [1mTOTAL: 27/50[0m
+[35m[LLM][0m Analyzing message...
+[93m[WARN][0m LLM error: HTTP Error 429: Too Many Requests
+
+[96mMessage:[0m "Hi Apollo Health Plus Pharmacy, 45 monthly refill  Category Fit           [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Merchant Fit           [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Decision Quality       [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Engagement             [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+
+  [1mTOTAL: 25/50[0m
+[94m[INFO][0m Batch 5: 5 actions (1909ms)
+[35m[LLM][0m Analyzing message...
+[93m[WARN][0m LLM error: HTTP Error 429: Too Many Requests
+
+[96mMessage:[0m "Hi Sunrise Medicos, 45 monthly refill customers in..."
+  Specificity            [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Category Fit           [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Merchant Fit           [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Decision Quality       [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Engagement             [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+
+  [1mTOTAL: 25/50[0m
+[35m[LLM][0m Analyzing message...
+[93m[WARN][0m LLM error: HTTP Error 429: Too Many Requests
+
+[96mMessage:[0m "Dr. Meera's Dental Clinic, 190 people searched for..."
+  Specificity            [[92m██████████████[2m░░░░░░[0m] [92m 7/10[0m
+  Category Fit           [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Merchant Fit           [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Decision Quality       [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Engagement             [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+
+  [1mTOTAL: 27/50[0m
+[35m[LLM][0m Analyzing message...
+
+[96mMessage:[0m "Dr. Meera's Dental Clinic, 190 people searched for..."
+  Specificity            [[93m████████████[2m░░░░░░░░[0m] [93m 6/10[0m
+  Category Fit           [[92m████████████████[2m░░░░[0m] [92m 8/10[0m
+  Merchant Fit           [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Decision Quality       [[92m██████████████[2m░░░░░░[0m] [92m 7/10[0m
+  Engagement             [[92m██████████████[2m░░░░░░[0m] [92m 7/10[0m
+
+  [1mTOTAL: 33/50[0m
+[35m[LLM][0m Analyzing message...
+
+[96mMessage:[0m "Hi Zen Yoga Studio, fitness searches in Mylapore s..."
+  Specificity            [[93m████████████[2m░░░░░░░░[0m] [93m 6/10[0m
+  Category Fit           [[92m████████████████[2m░░░░[0m] [92m 8/10[0m
+  Merchant Fit           [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Decision Quality       [[93m████████[2m░░░░░░░░░░░░[0m] [93m 4/10[0m
+  Engagement             [[93m████████████[2m░░░░░░░░[0m] [93m 6/10[0m
+
+  [1mTOTAL: 29/50[0m
+[35m[LLM][0m Analyzing message...
+
+[96mMessage:[0m "Hi Glamour Lounge Spa & Salon, weekend booking dem..."
+  Specificity            [[93m████████████[2m░░░░░░░░[0m] [93m 6
+[96mMessage:[0m "Hi Glamour Lounge Spa & Salon, weekend booking dem..."
+  Specificity            [[92m██████████████[2m░░░░░░[0m] [92m 7/10[0m
+  Category Fit           [[92m████████████████[2m░░░░[0m] [92m 8/10[0m
+  Merchant Fit           [[92m████████████████[2m░░░░[0m] [92m 8/10[0m
+  Decision Quality       [[92m██████████████[2m░░░░░░[0m] [92m 7/10[0m
+  Engagement             [[92m██████████████[2m░░░░░░[0m] [92m 7/10[0m
+
+  [1mTOTAL: 37/50[0m
+
+[96m[1m--- FINAL SUMMARY ---[0m
+
+[94m[INFO][0m Messages scored: 25
+
+  Avg Specificity        [[92m██████████████[2m░░░░░░[0m] [92m 7/10[0m
+  Avg Category Fit       [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Avg Merchant Fit       [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Avg Decision Quality   [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+  Avg Engagement         [[93m██████████[2m░░░░░░░░░░[0m] [93m 5/10[0m
+
+[1m  AVERAGE SCORE: 27/50 (54%)[0m
+
+  [93mNEEDS IMPROVEMENT[0m

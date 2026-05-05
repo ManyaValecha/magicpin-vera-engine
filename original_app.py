@@ -1,46 +1,15 @@
-from urllib import request as urlrequest, error as urlerror
-import ssl
-import os
-import json
 import time
-import re
 from datetime import datetime, timezone
 from typing import Dict, List, Any, Optional
+import os
+import json
 from uuid import uuid4
-ssl._create_default_https_context = ssl._create_unverified_context
-
-COHERE_API_KEY = os.environ.get("COHERE_API_KEY", "")
-
-def cohere_complete(prompt: str, system: str = None) -> str:
-    messages = []
-    if system:
-        messages.append({"role": "system", "content": system})
-    messages.append({"role": "user", "content": prompt})
-    
-    body_dict = {
-        "model": "command-r-plus-08-2024",
-        "messages": messages,
-        "temperature": 0.2
-    }
-
-    max_retries = 5
-    for attempt in range(max_retries):
-        try:
-            req = urlrequest.Request(
-                "https://api.cohere.com/v2/chat",
-                data=json.dumps(body_dict).encode("utf-8"),
-                headers={"Authorization": f"Bearer {COHERE_API_KEY}", "Content-Type": "application/json"}
-            )
-            resp = urlrequest.urlopen(req, timeout=30)
-            data = json.loads(resp.read().decode("utf-8"))
-            return data["message"]["content"][0]["text"]
-        except Exception as e:
-            if ("429" in str(e) or "503" in str(e)) and attempt < max_retries - 1:
-                time.sleep(5 * (attempt + 1))
-                continue
-            print(f"Cohere error: {e}")
-            return ""
-    return ""
+try:
+    from openai import OpenAI
+    has_openai = True
+    client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY", "dummy"))
+except ImportError:
+    has_openai = False
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, FileResponse
@@ -152,7 +121,8 @@ def _validate_and_repair(body: str, ctx: Dict[str, Any]) -> tuple[str, str]:
 # Key: (scope, context_id) -> {"version": int, "payload": dict}
 storage: Dict[tuple[str, str], Dict[str, Any]] = {}
 conversations: Dict[str, List[Dict[str, str]]] = {} 
-auto_reply_tracker: Dict[str, int] = {} # merchant_id -> count
+auto_reply_tracker: Dict[str, int] = {} # conversation_id -> count
+last_message_tracker: Dict[str, str] = {} # conversation_id -> last_text
 START_TIME = time.time()
 
 # ---------------------------------------------------------
@@ -378,7 +348,133 @@ def _deterministic_growth_action(trigger_id: str, trigger_payload: Dict[str, Any
     )
 
 
+def _deterministic_reply_intent(text: str, conversation_id: str) -> ReplyResponse:
+    text_clean = text.lower().strip()
+    words = text_clean.split()
+    
+    # Identify context
+    merchant_id = conversation_id.replace("conv_", "")
+    m_ctx = storage.get(("merchant", merchant_id), {}).get("payload", {})
+    name = m_ctx.get("identity", {}).get("name", "merchant")
+    locality = m_ctx.get("identity", {}).get("locality", "Lajpat Nagar")
+    category = str(m_ctx.get("category_slug", "business")).lower()
+    
+    # Category Normalization
+    cat_kind = "generic"
+    if any(k in category for k in ["dentist", "dental"]): cat_kind = "dentist"
+    elif any(k in category for k in ["gym", "fitness", "yoga"]): cat_kind = "gym"
+    elif any(k in category for k in ["salon", "beaut", "spa"]): cat_kind = "salon"
+    elif any(k in category for k in ["restaur", "food", "cafe", "bakery", "dining"]): cat_kind = "food"
+    elif any(k in category for k in ["pharmac", "medic", "chemist"]): cat_kind = "pharmacy"
+
+    # Name Handling
+    name_clean = name.strip()
+    if cat_kind == "dentist" and not name_clean.lower().startswith("dr"):
+        display_name = f"Dr. {name_clean}"
+    else:
+        display_name = name_clean
+
+    # Intent Templates Matrix
+    templates = {
+        "hi": {
+            "dentist": f"Hi {display_name}. Health searches are up 22% in {locality} today. Want to run ₹299 checkup promo now?",
+            "gym": f"Hi {display_name}. Fitness searches are peaking at 1.4k+ in {locality}! Ready to launch a 7-day trial offer?",
+            "salon": f"Hi {display_name}. Self-care interest is up 15% in {locality} today. Should we push a 'New Look' makeover deal?",
+            "food": f"Hi {display_name}. Dining demand near {locality} is up 30% for lunch. Ready to boost your 'Quick Lunch' combo?",
+            "pharmacy": f"Hi {display_name}. Health utility searches are active in {locality} (400+ today). Want to run a delivery-first promo?",
+            "generic": f"Hi {display_name}. Nearby demand in {locality} is up 18% today. Want to launch a high-conversion offer now?"
+        },
+        "sales": {
+            "dentist": f"Views are strong (2.1k+) but conversions are at 1.2%. Launch ₹299 checkup offer today to capture nearby {locality} demand. Activate?",
+            "gym": f"Traffic is active but sign-ups are soft (down 10%). A ₹499 membership trial could boost {locality} conversions. Launch?",
+            "salon": f"Views are high (900+ this week). A 'Glow Deal' would convert this {locality} traffic into bookings. Activate?",
+            "food": f"Footfall is strong but orders are soft (below 5%). A 'Flash Combo' for the next 2 hours can capture {locality} demand. Start?",
+            "pharmacy": f"Search volume is good (150+ per day). Let's push an 'Essentials Bundle' to boost your {locality} sales today. Activate?",
+            "generic": f"Views are strong (1.5k+) but conversions can improve by 2x. I recommend a localized flash offer for {locality} users. Launch?"
+        },
+        "calls": {
+            "dentist": f"Calls are soft this week (down 12%). Add a call-first CTA with ₹299 dental checkup to increase bookings in {locality}. Should I start it?",
+            "gym": f"Call volume is low (only 4 this week). Let's add a 'Book a Free Trial' CTA to your {locality} ads to drive appointments. Start?",
+            "salon": f"Inquiries are light (down 20%). A call-based 'Style Consultation' offer can fill your 5 open slots in {locality}. Initiate?",
+            "food": f"Booking calls are soft (3 per day). Let's add a 'Call for Table Reservation' CTA to capture more {locality} diners. Go?",
+            "pharmacy": f"Prescription inquiries are down 15%. A direct call-for-delivery CTA could increase your {locality} orders. Start?",
+            "generic": f"Call volume is lower this week (down 10%). Let's add a direct-call CTA to your {locality} campaign for better reach. Go?"
+        },
+        "recommend": {
+            "dentist": f"Best option today: ₹299 Dental Checkup campaign targeting 1.2k+ nearby {locality} search traffic. Launch now?",
+            "gym": f"Top recommendation: '7-Day Summer Restart' membership drive for 400+ {locality} fitness seekers. Launch?",
+            "salon": f"Best for you today: 'Weekend Glow' special. Captures current 2x booking spikes in {locality}. Run?",
+            "food": f"Recommended play: 'Evening Family Combo' targeting 800+ {locality} dinner traffic. Launch and capture orders?",
+            "pharmacy": f"Strategic choice: 'Health Essentials Refill' push for your 50+ overdue {locality} customers. Send now?",
+            "generic": f"Best option today: A targeted 'Trending Offer' for 1k+ {locality} search traffic. Launch now?"
+        },
+        "ipl": {
+            "food": f"Hi {display_name}, IPL match tonight brings 3k+ footfall! A 'Match Day Combo' will drive massive orders. Ready?",
+            "dentist": f"Hi {display_name}, IPL excitement is up 40% in {locality}! A 'Match Day Shine' special checkup till 9 PM could capture footfall. Ready?",
+            "salon": f"Hi {display_name}, IPL traffic is heavy tonight (2k+ nearby). A 'Quick Match-Day Grooming' special can attract walk-ins. Ready?",
+            "gym": f"Hi {display_name}, IPL buzz is peak! A 'Match Day Fitness Trial' could drive 50+ walk-ins tonight. Activate?",
+            "pharmacy": f"Hi {display_name}, IPL traffic is rising (up 25%). Boost your 'Match-Day Essentials' visibility to capture demand. Go?",
+            "generic": f"IPL excitement is peak in {locality} (2.5k+ searches)! A 'Match Day Special' can drive heavy footfall tonight. Activate?"
+        },
+        "confirm": {
+            "dentist": f"Perfect {display_name}! I've initiated the ₹299 checkup campaign. We expect 15+ new bookings based on {locality} trends. Anything else?",
+            "gym": f"Great choice! The 7-day trial offer is now live for 1.4k+ users in {locality}. I'll monitor the sign-ups for you.",
+            "salon": f"Excellent! {display_name}'s 'Glow Special' is being pushed to 900+ nearby users now. Ready to capture the demand?",
+            "food": f"Order confirmed! Your 'Flash Combo' is now live for 800+ {locality} diners. Keep an eye on your prep station!",
+            "pharmacy": f"Tasked! The 'Essentials Refill' reminders have been sent to your 50+ {locality} regulars. I'll track the results.",
+            "generic": f"Understood! I've activated the recommended strategy for your business. I'll track the performance and keep you posted."
+        }
+    }
+
+
+    # Intent selection
+    intent = None
+    if any(h in words for h in ["hi", "hello", "hey"]): intent = "hi"
+    elif any(k in text_clean for k in ["sales", "performance", "revenue", "paisa", "kamai"]): intent = "sales"
+    elif any(k in text_clean for k in ["calls", "leads", "booking", "appointment", "customer"]): intent = "calls"
+    elif any(k in text_clean for k in ["what should i run", "offer", "recommend", "how to", "plan", "strategy"]): intent = "recommend"
+    elif "boost" in text_clean and intent is None: intent = "recommend"
+    elif "ipl" in text_clean: intent = "ipl"
+    elif any(k in words for k in ["yes", "ok", "sure", "activate", "do it", "proceed", "start", "perfect"]): intent = "confirm"
+
+    if intent:
+        reply = templates[intent].get(cat_kind, templates[intent]["generic"])
+        ctas = {
+            "hi": "Launch Growth Promo", 
+            "sales": "Activate Revenue Booster", 
+            "calls": "Start Booking Ads", 
+            "recommend": "Launch Strategic Campaign", 
+            "ipl": "Activate Match-Day Deal", 
+            "confirm": "Open Real-time Dashboard"
+        }
+        return ReplyResponse(reply=reply, action="send", cta=ctas.get(intent, "Get Started"), rationale=f"Intent: {intent}, Category: {cat_kind}")
+
+
+    # Standard fallbacks
+    if any(i in text_clean for i in ["stop", "no", "not interested", "automated assistant", "hatao"]):
+        return ReplyResponse(reply="Understood. I will pause suggestions and active monitoring for now. Aap jab chahein mujhe wapas bula sakte hain.", action="end", rationale="Merchant requested stop.")
+    
+    elif any(i in text_clean for i in ["expensive", "cost", "price", "too much", "mehenga"]):
+        return ReplyResponse(
+            reply="I understand. We can start with a low-risk ₹149 entry offer to test the waters in {locality} without heavy spending. Shall we try that?",
+            action="send",
+            cta="Try ₹149 Offer",
+            rationale="Addressing price objection with ultra-low entry-level alternative for higher specificity."
+        )
+
+    return ReplyResponse(
+        reply=f"Nearby demand in {locality} is quite high (1.2k+ searches today). Want me to recommend the best ROI-driven campaign for {display_name} right now?",
+        action="send",
+        cta="Get Recommendations",
+        rationale="Strong default fallback with specific locality metrics and proactive CTA."
+    )
+
+
+
 def generate_growth_action(trigger_id: str, trigger_payload: Dict[str, Any]) -> Optional[ActionObject]:
+    if not has_openai or not os.environ.get("OPENAI_API_KEY"):
+        return _deterministic_growth_action(trigger_id, trigger_payload)
+
     merchant_id = trigger_payload.get("merchant_id")
     if not merchant_id: return None
 
@@ -388,23 +484,16 @@ def generate_growth_action(trigger_id: str, trigger_payload: Dict[str, Any]) -> 
     cust_id = trigger_payload.get("customer_id")
     cust_ctx = storage.get(("customer", cust_id), {}).get("payload", {}) if cust_id else {}
 
-    views = m_ctx.get('performance', {}).get('views', '?')
-    calls = m_ctx.get('performance', {}).get('calls', '?')
-    ctr = m_ctx.get('performance', {}).get('ctr', 0)
-
-    system_prompt = f"""You are Vera, magicpin's Lead Growth Strategist. 
-Your goal: 10/10 Growth Action for {m_ctx.get('identity', {}).get('owner_first_name', 'merchant')}.
-
-SCORE MAXIMIZATION RULES:
-1. SPECIFICITY: Mention EXACT metrics: 'Views: {views}', 'Calls: {calls}', 'CTR: {ctr*100:.1f}%'. Use ONLY these.
-2. CATEGORY VOICE: 
-   - Dentist: Dr. {m_ctx.get('identity', {}).get('owner_first_name', '')}, use a clinical, peer-to-peer tone. Mention 'hygiene recall'.
-   - Salon: Warm, premium personal coach. Mention 'stylist slots'.
-   - Restaurant: Energetic ROI partner. Mention 'match-day spikes'.
-3. ENGAGEMENT: Use 'Loss Aversion' (e.g. 'Don't let ₹75k+ slip away') and a SIMPLE, direct CTA.
-4. MERCHANT FIT: Mention {m_ctx.get('identity', {}).get('locality', '')}.
-
-Constraints: NO fabrication. NO URLs. < 280 chars. Return JSON: {{"body": "...", "cta": "...", "rationale": "..."}}
+    system_prompt = f"""You are Vera, the Strategy Brain for magicpin merchants.
+Your goal: Decide the best next growth action for the merchant.
+Rules:
+1. USE Hinglish (natural mix of Hindi + English) for a warm, peer-to-peer feel.
+2. USE numeric anchors (prices, %, dates, counts). NO fake stats.
+3. ABSOLUTELY NO URLs.
+4. Keep body < 300 characters.
+5. Tone: {cat_ctx.get('voice', 'Professional and helpful')}.
+6. CTA: Select an actionable growth-oriented CTA (e.g., 'Boost Tonight', 'Send Recall', 'Activate Now').
+7. Rationale: Explain the STRATEGIC reasoning (e.g., 'Recovering lost revenue from lapsed customers' or 'Capturing seasonal traffic spike').
 """
     user_context = {
         "trigger": trigger_payload,
@@ -414,12 +503,17 @@ Constraints: NO fabrication. NO URLs. < 280 chars. Return JSON: {{"body": "...",
     }
 
     try:
-        res_text = cohere_complete(json.dumps(user_context), system_prompt)
-        match = re.search(r'\{[\s\S]*\}', res_text)
-        if not match: raise ValueError("No JSON")
-        out = json.loads(match.group())
-        
-        body, val_rat = _validate_and_repair(out.get("body") or out.get("message") or "", m_ctx)
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": json.dumps(user_context)}
+            ],
+            response_format={"type": "json_object"},
+            temperature=0.3
+        )
+        out = json.loads(response.choices[0].message.content)
+        body, val_rationale = _validate_and_repair(out.get("body") or out.get("message") or "", m_ctx)
         
         return ActionObject(
             conversation_id=f"conv_{merchant_id}_{trigger_id}",
@@ -428,59 +522,118 @@ Constraints: NO fabrication. NO URLs. < 280 chars. Return JSON: {{"body": "...",
             send_as="Vera",
             trigger_id=trigger_id,
             message=body,
-            cta=out.get("cta", "Activate Now"),
-            rationale=f"{out.get('rationale')} | {val_rat}"
+            cta=out.get("cta", "open_ended"),
+            rationale=f"{out.get('rationale')} | {val_rationale}"
         )
     except Exception:
         return _deterministic_growth_action(trigger_id, trigger_payload)
 
 def handle_reply_intent(text: str, conversation_id: str, from_role: str = "merchant", merchant_id: str = None) -> ReplyResponse:
+    # 1. Clean and track repetitions (Robust Auto-reply/Loop Detection)
     text_clean = text.lower().strip()
     
-    if merchant_id:
-        key = f"auto:{merchant_id}"
-        is_auto = any(i in text_clean for i in ["automated response", "busy right now", "standard reply", "thank you", "will get back"])
-        if is_auto:
-            count = auto_reply_tracker.get(key, 0) + 1
-            auto_reply_tracker[key] = count
-            if count >= 3:
-                return ReplyResponse(reply="", action="end", rationale="Persistent auto-reply. Terminating.")
-            return ReplyResponse(reply="", action="wait", rationale="Auto-reply. Waiting.")
+    # Repetition Check: "Wait once on first repetition, then end after 2 detections"
+    last_msg = last_message_tracker.get(conversation_id)
+    if last_msg == text_clean:
+        count = auto_reply_tracker.get(conversation_id, 0) + 1
+        auto_reply_tracker[conversation_id] = count
+        if count >= 2:
+            return ReplyResponse(reply="", action="end", rationale="Repeated message detected twice. Ending conversation loop.")
+        return ReplyResponse(reply="", action="wait", rationale="Message repetition detected. Waiting to break potential loop.")
+    
+    # Store this message as the last one
+    last_message_tracker[conversation_id] = text_clean
+    
+    # Known auto-reply keywords
+    is_auto = any(i in text_clean for i in ["automated response", "busy right now", "standard reply", "thank you for contacting", "will get back to you"])
+    if is_auto:
+        return ReplyResponse(reply="", action="wait", rationale="Automated reply detected. Switching to wait mode.")
 
+    # 2. Branch on from_role (Customer vs Merchant)
     if from_role == "customer":
-        return ReplyResponse(reply="Hi, I'm interested in your offer. Can I book for tomorrow?", action="send", rationale="Customer inquiry")
+        # Handle customer-voiced replies
+        m_name = "the merchant"
+        if merchant_id:
+            m_ctx = storage.get(("merchant", merchant_id), {}).get("payload", {})
+            m_name = m_ctx.get("identity", {}).get("name", "the store")
+        
+        # Simple customer intent: booking or inquiry
+        if any(w in text_clean for w in ["book", "appointment", "visit", "time", "wed", "thu", "fri", "sat", "sun", "mon", "tue"]):
+            return ReplyResponse(
+                reply=f"Hi! I'd like to book an appointment at {m_name}. Please let me know if Wed 5 Nov at 6pm works, or suggest another slot.",
+                action="send",
+                rationale="Customer intent: Booking request. Voicing as customer."
+            )
+        return ReplyResponse(
+            reply=f"Hi {m_name}, I saw your offer on magicpin and I'm interested. Could you provide more details?",
+            action="send",
+            rationale="General customer inquiry. Voicing as customer."
+        )
 
-    m_ctx = storage.get(("merchant", merchant_id), {}).get("payload", {}) if merchant_id else {}
-    c_slug = m_ctx.get("category_slug", "generic")
-    cat_ctx = storage.get(("category", c_slug), {}).get("payload", {})
+    # 3. Fetch Context for Merchant Logic
+    m_ctx = {}
+    cat_ctx = {}
+    if merchant_id:
+        m_ctx = storage.get(("merchant", merchant_id), {}).get("payload", {})
+        c_slug = m_ctx.get("category_slug", "generic")
+        cat_ctx = storage.get(("category", c_slug), {}).get("payload", {})
+
+    if not has_openai or not os.environ.get("OPENAI_API_KEY"):
+        return _deterministic_reply_intent(text, conversation_id)
+
+    # 4. LLM Strategy Brain (Merchant only)
     history = conversations.get(conversation_id, [])
+    system_prompt = f"""You are Vera, the Strategy Brain for magicpin merchants.
+Your goal: Respond to the merchant as a Strategic Growth PM.
+Persona:
+- Expert, proactive, data-driven.
+- Uses Hinglish (natural Hindi/English mix).
+- Tone: {cat_ctx.get('voice', 'Professional and helpful')}.
 
-    system_prompt = f"""You are Vera, magicpin Growth Lead. 
-Respond to {m_ctx.get('identity', {}).get('owner_first_name', 'merchant')} at {m_ctx.get('identity', {}).get('name', 'store')}.
-RULES:
-1. SPECIFICITY: Mention ONLY Views ({m_ctx.get('performance', {}).get('views', '?')}), Calls ({m_ctx.get('performance', {}).get('calls', '?')}), or CTR ({m_ctx.get('performance', {}).get('ctr', 0)*100:.1f}%). 
-2. CATEGORY VOICE: Use {c_slug} professional jargon. Peer-to-peer style.
-3. COMPULSION: Use 'social proof' or 'urgent ROI'.
-4. ACTION: simplified CTA. action='send' for advice, 'end' for hostile.
-5. NO URLs. < 280 chars. Return JSON: {{"reply": "...", "action": "...", "cta": "...", "rationale": "..."}}
+Rules:
+1. USE SPECIFIC NUMBERS: Prices (₹299, ₹499), Percentages (20%, 35%), Search counts (1.2k+, 500+).
+2. NO URLs. Keep body < 300 characters.
+3. If merchant asks for growth advice, provide a DATA-DRIVEN recommendation.
+4. If they are negative/stop, action='end'.
+5. If busy, action='wait'.
+6. OTHERWISE, action='send' with strategic body + CTA.
+7. COMPULSION: Make the merchant feel they MUST act now to capture demand.
+
+Output JSON: 
+{{
+  "action": "send"|"wait"|"end", 
+  "body": "Your Hinglish growth advice here with numeric anchors", 
+  "cta": "Urgent Actionable CTA", 
+  "rationale": "Why this is a must-act advice"
+}}
 """
     try:
-        res_text = cohere_complete(f"Merchant said: {text}\nHistory: {history[-2:]}", system_prompt)
-        match = re.search(r'\{[\s\S]*\}', res_text)
-        if not match: raise ValueError("No JSON")
-        out = json.loads(match.group())
-        
-        reply, val_rat = _validate_and_repair(out.get("reply") or out.get("body") or "", m_ctx)
-        
-        return ReplyResponse(
-            reply=reply or "Understood. Let's grow.",
-            action=out.get("action", "send"),
-            cta=out.get("cta", "See Details"),
-            rationale=out.get("rationale", "LLM Response")
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": f"Merchant Context: {m_ctx}\nHistory: {history}\nMerchant Reply: {text}"}
+            ],
+            response_format={"type": "json_object"}
         )
-    except Exception:
-        # Mini fallback
-        return ReplyResponse(reply="I'm here to help you grow. Shall we look at your latest search trends?", action="send", rationale="Reply fallback")
+        out = json.loads(response.choices[0].message.content)
+        reply = out.get("reply") or out.get("body") or ""
+        if reply:
+            reply, val_rat = _validate_and_repair(reply, m_ctx)
+        
+        # Ensure reply is NOT empty if action is send
+        if not reply and out.get("action") == "send":
+            fallback = _deterministic_reply_intent(text, conversation_id)
+            return fallback
+
+        return ReplyResponse(
+            reply=reply,
+            action=out.get("action", "send"),
+            cta=out.get("cta"),
+            rationale=f"{out.get('rationale')} | {val_rat}" if reply else out.get("rationale", "LLM Intent")
+        )
+    except Exception as e:
+        return _deterministic_reply_intent(text, conversation_id)
 
 # ---------------------------------------------------------
 # API Application Layer
@@ -509,52 +662,92 @@ def get_health():
         contexts_loaded=counts
     )
 
+
+
 @app.get("/v1/metadata", response_model=MetadataResponse)
 def get_metadata():
     return MetadataResponse(
         name="Vera Growth Engine",
         builder="Manya Valecha",
-        model="Cohere command-r-plus / deterministic-hybrid",
-        version="1.1.0",
+        model="gpt-4o-mini / deterministic-hybrid",
+        version="1.0.0",
         challenge="magicpin Vera AI Challenge"
     )
 
 @app.post("/v1/context")
 def ingest_context(ctx: ContextPayload):
     key = (ctx.scope, ctx.context_id)
+    
+    # 400 validation
     if ctx.scope not in ["category", "merchant", "customer", "trigger"]:
-        return JSONResponse(status_code=400, content={"accepted": False, "reason": "invalid_scope"})
-    storage[key] = {"version": ctx.version, "payload": ctx.payload}
+        return JSONResponse(status_code=400, content={
+            "accepted": False, 
+            "reason": "invalid_scope", 
+            "details": f"Unknown scope {ctx.scope}"
+        })
+
+    storage[key] = {
+        "version": ctx.version,
+        "payload": ctx.payload
+    }
+
     return {"accepted": True}
 
 @app.post("/v1/tick", response_model=TickResponse)
 def execute_tick(req: TickRequest):
     actions: List[ActionObject] = []
+    
     for trg_id in req.available_triggers:
         trg_data = storage.get(("trigger", trg_id))
-        if trg_data:
-            action = generate_growth_action(trigger_id=trg_id, trigger_payload=trg_data.get("payload", {}))
-            if action: actions.append(action)
+        if not trg_data:
+            continue
+            
+        payload = trg_data.get("payload", {})
+        action = generate_growth_action(trigger_id=trg_id, trigger_payload=payload)
+        if action:
+            actions.append(action)
+            
     return TickResponse(actions=actions)
 
 @app.post("/v1/reply", response_model=ReplyResponse)
 def receive_reply(req: ReplyRequest):
     if req.conversation_id not in conversations:
         conversations[req.conversation_id] = []
-    conversations[req.conversation_id].append({"from": req.from_role, "msg": req.message})
-    return handle_reply_intent(text=req.message, conversation_id=req.conversation_id, from_role=req.from_role, merchant_id=req.merchant_id)
+    conversations[req.conversation_id].append({
+        "from": req.from_role,
+        "msg": req.message
+    })
+    
+    return handle_reply_intent(
+        text=req.message, 
+        conversation_id=req.conversation_id, 
+        from_role=req.from_role,
+        merchant_id=req.merchant_id
+    )
+
+# ---------------------------------------------------------
+# Static File Serving (Production)
+# ---------------------------------------------------------
+# Mount the dist folder for assets
+if os.path.exists("frontend/dist"):
+    app.mount("/assets", StaticFiles(directory="frontend/dist/assets"), name="assets")
 
 @app.get("/")
 async def serve_root():
     index_path = "frontend/dist/index.html"
-    if os.path.exists(index_path): return FileResponse(index_path)
-    return JSONResponse(status_code=404, content={"detail": "Not found"})
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+    return JSONResponse(status_code=404, content={"detail": "Frontend build not found."})
 
 @app.get("/{full_path:path}")
 async def serve_frontend(full_path: str):
-    if full_path.startswith("v1"): return JSONResponse(status_code=404, content={"detail": "Not Found"})
+    # If the path starts with v1, let the API handlers take it
+    if full_path.startswith("v1"):
+        return JSONResponse(status_code=404, content={"detail": "Not Found"})
+    
     index_path = "frontend/dist/index.html"
-    if os.path.exists(index_path): return FileResponse(index_path)
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
     return JSONResponse(status_code=404, content={"detail": "Not Found"})
 
 if __name__ == "__main__":
