@@ -544,10 +544,17 @@ def receive_reply(req: ReplyRequest):
     conversations[req.conversation_id].append({"from": req.from_role, "msg": req.message})
     return handle_reply_intent(text=req.message, conversation_id=req.conversation_id, from_role=req.from_role, merchant_id=req.merchant_id)
 
-# Mount the dist folder for assets
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-assets_dir = os.path.join(BASE_DIR, "frontend", "dist", "assets")
-app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+# Mount static assets explicitly instead of app.mount to avoid boot crashes
+@app.get("/assets/{file_path:path}")
+async def serve_asset(file_path: str):
+    import os
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    target = os.path.join(BASE_DIR, "frontend", "dist", "assets", file_path)
+    if os.path.exists(target):
+        if target.endswith(".js"): return FileResponse(target, media_type="application/javascript")
+        if target.endswith(".css"): return FileResponse(target, media_type="text/css")
+        return FileResponse(target)
+    return JSONResponse(status_code=404, content={"error": "Asset Missing", "path": target})
 
 @app.get("/")
 async def serve_root():
