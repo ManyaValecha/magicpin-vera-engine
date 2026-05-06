@@ -545,8 +545,9 @@ def receive_reply(req: ReplyRequest):
     return handle_reply_intent(text=req.message, conversation_id=req.conversation_id, from_role=req.from_role, merchant_id=req.merchant_id)
 
 # Mount the dist folder for assets
-if os.path.exists("frontend/dist/assets"):
-    app.mount("/assets", StaticFiles(directory="frontend/dist/assets"), name="assets")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+assets_dir = os.path.join(BASE_DIR, "frontend", "dist", "assets")
+app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
 
 @app.get("/")
 async def serve_root():
