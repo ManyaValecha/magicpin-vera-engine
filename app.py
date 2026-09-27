@@ -8,10 +8,7 @@ from datetime import datetime, timezone
 from typing import Dict, List, Any, Optional
 from uuid import uuid4
 ssl._create_default_https_context = ssl._create_unverified_context
-
-_KEY_P1 = "98bZ48NaxH1zoPf51t"
-_KEY_P2 = "lQ44yIoByYD6NsiWCJzlGz"
-COHERE_API_KEY = os.environ.get("COHERE_API_KEY", _KEY_P1 + _KEY_P2)
+COHERE_API_KEY = os.environ.get("COHERE_API_KEY")
 
 def cohere_complete(prompt: str, system: str = None) -> str:
     messages = []
